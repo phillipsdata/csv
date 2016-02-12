@@ -46,9 +46,10 @@ class Factory
         $enclosure = '"',
         $escape = '\\'
     ) {
+        $file = static::fileObject($filename);
+        $file->setCsvControl($delimiter, $enclosure, $escape);
+        
         $reader = new Reader();
-        $file = static::fileObject($filename)
-            ->setCsvControl($delimiter, $enclosure, $escape);
         $reader->input($file);
 
         return $reader;
@@ -61,7 +62,7 @@ class Factory
      * @param string $openMode
      * @return \SplFileObject
      */
-    protected static function fileOejct($filename, $openMode = 'r')
+    protected static function fileObject($filename, $openMode = 'r')
     {
         return new SplFileObject($filename, $openMode);
     }

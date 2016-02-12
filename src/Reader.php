@@ -43,6 +43,9 @@ class Reader extends AbstractModifier implements SeekableIterator
         #
         # TODO: Format
         #
+        if ($this->formatCallback) {
+            $row = call_user_func($this->formatCallback, $row, $this->key());
+        }
 
         return $row;
     }
