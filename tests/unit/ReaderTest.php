@@ -18,6 +18,21 @@ class ReaderTest extends PHPUnit_Framework_TestCase
     {
         return Factory::reader(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'reader.csv');
     }
+/*
+    public function testa() {
+        $file = new \SplFileObject(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'reader.csv');
+        $filter = new \CallbackFilterIterator($file, function() { return false;});
+
+        var_dump($filter->valid());
+        $total = 0;
+        foreach ($filter as $val) {
+            $total++;
+            var_dump($val);
+        }
+        echo $total;
+    }
+ *
+ */
 
     /**
      * @covers ::input
@@ -144,27 +159,105 @@ class ReaderTest extends PHPUnit_Framework_TestCase
         }
 
         // Format each CSV line
-        foreach ($reader as $line) {
-            $reader->format(function ($line, $key) {
-                $values = [];
-                foreach ($line as $cell) {
-                    $values[] = $this->format($cell);
-                }
+        $reader->format(function ($line, $key) {
+            $values = [];
+            foreach ($line as $cell) {
+                $values[] = $this->format($cell);
+            }
 
-                return $values;
-            });
-        }
-
+            return $values;
+        });
 
         // Check each cell has been formatted
         foreach ($reader as $i => $line) {
             foreach ($line as $j => $cell) {
+                // The values should be different until formatted
+                $this->assertNotEquals(
+                    $default_lines[$i][$j],
+                    $cell
+                );
+
+                // The values should be identical once formatted
                 $this->assertEquals(
                     $this->format($default_lines[$i][$j]),
                     $cell
                 );
             }
         }
+    }
+
+    /**
+     * @covers ::accept
+     * @covers ::current
+     * @covers ::input
+     * @covers ::key
+     * @covers ::next
+     * @covers ::rewind
+     * @covers ::valid
+     * @uses \PhillipsData\Csv\Factory::reader
+     * @uses \PhillipsData\Csv\Factory::fileObject
+     */
+    public function testFilter()
+    {
+        $reader = $this->getReader();
+        // Determine defaults for a line
+        $default_lines = [];
+        foreach ($reader as $line) {
+            $default_lines[] = $line;
+        }
+
+        $reader->accept(function ($line, $key) {
+            // Only return values where the second column contains even numbers
+            #echo "\n---CALLBACK FILTER";
+            #print_r($line);
+            #echo "KEY: " . $key . "\n";
+            #var_dump((preg_match('/[02468]+/', $line[1])));
+            #echo "\---CALLBACK FILTER\n";
+            return (preg_match('/[02468]+/', $line[1]));
+        });
+
+        // Check that the CSV contains only the matching rows
+        $total_lines = 0;
+        echo "\n\n-----CHECK NOW\n";
+        foreach ($reader as $i => $line) {
+            echo "INDEX: " . $i . "\n";
+            var_dump($line);
+            $total_lines++;
+
+            // CSV contains 4 rows, the third of which should not match
+            $this->assertContains($i, [0, 1, 3]);
+        }
+        echo "ENDCHECK\n";
+
+        // CSV contains 4 rows, of which 3 should match
+        $this->assertEquals(3, $total_lines);
+
+        // CSV contains no matching rows
+        $reader = $this->getReader();
+        $reader->accept(function ($line, $key) {
+            return false;
+        });
+
+        $total = 0;
+        foreach ($reader as $i => $line) {
+            echo "SHOULD NOT GET HERE";
+            var_dump($line);
+            $this->assertEmpty($line);
+            $total++;
+        }
+        $this->assertEquals(1, $total);
+
+        // CSV contains 4 rows
+        $reader = $this->getReader();
+        $reader->accept(function ($line, $key) {
+            return true;
+        });
+
+        $total = 0;
+        foreach ($reader as $i => $line) {
+            $total++;
+        }
+        $this->assertEquals(4, $total);
     }
 
     /**

@@ -1,10 +1,12 @@
 <?php
 namespace PhillipsData\Csv;
 
+use FilterIterator;
+
 /**
  * Modifier allows modifying the result set
  */
-abstract class AbstractModifier
+abstract class AbstractModifier extends FilterIterator
 {
     protected $acceptCallback;
     protected $formatCallback;
@@ -14,7 +16,7 @@ abstract class AbstractModifier
      *
      * @param callable $callback
      */
-    public function accept(callable $callback)
+    public function filter(callable $callback)
     {
         $this->acceptCallback = $callback;
     }
