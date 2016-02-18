@@ -1,81 +1,160 @@
 <?php
 namespace PhillipsData\Csv;
 
-use SeekableIterator;
 use SplFileObject;
+use Iterator;
+use CallbackFilterIterator;
+use PhillipsData\Csv\Map\MapIterator;
 
 /**
  * CSV Reader
  */
-class Reader extends AbstractModifier implements SeekableIterator
+class Reader extends AbstractCsv
 {
-    protected $file;
+    /**
+     * @var array<int, string> The header to use to format results
+     */
+    protected $header = null;
 
     /**
      * Set the input file
      *
-     * @param \SplFileObject $file
+     * @param SplFileObject $file
+     * @param bool $withHeader True to parse the first row as the header
+     * @return self
      */
-    public function input(SplFileObject $file)
+    public static function input(SplFileObject $file, $withHeader = true)
     {
-        $this->file = $file;
+        $file->setFlags(
+            SplFileObject::READ_CSV
+            | SplFileObject::READ_AHEAD
+            | SplFileObject::SKIP_EMPTY
+        );
+        $reader = new static($file);
+
+        if ($withHeader) {
+            $file->rewind();
+            $reader->setHeader($file->current());
+        }
+
+        return $reader;
     }
 
     /**
-     * {@inheritdoc}
+     * Set the header to use when parsing the CSV
+     *
+     * @param array<int, string> $header
      */
-    public function seek($position)
+    public function setHeader(array $header = null)
     {
-        return $this->file->seek($position);
+        $this->header = $header;
     }
 
     /**
-     * {@inheritdoc}
+     * Fetch the iterator for the reader
+     *
+     * @return Iterator
      */
-    public function current()
+    public function fetch()
     {
-        #
-        # TODO: Filter (call $this->next() until filter callback returns true)
-        #
+        $header = $this->header;
 
-        $row = $this->file->fgetcsv();
+        // Initial format iterator
+        $iterator = $this->getIterator();
+        $iterator = $this->applyFilter(
+            $iterator,
+            function ($row, $key) use ($header) {
+                // Skip row if this is the header row
+                return !$header || $key !== 0;
+            }
+        );
+        $iterator = $this->getAssocIterator($iterator);
+        $iterator = $this->getFilterIterator($iterator);
+        $iterator = $this->getFormatIterator($iterator);
 
-        #
-        # TODO: Format
-        #
-
-        return $row;
+        return $iterator;
     }
 
     /**
-     * {@inheritdoc}
+     * Ensure rows are returned as associative arrays
+     *
+     * @param Iterator $iterator
+     * @return MapIterator
      */
-    public function key()
+    private function getAssocIterator(Iterator $iterator)
     {
-        return $this->file->key();
+        // Initial format iterator
+        $header = $this->header;
+        $headerCount = count($header);
+        return $this->applyFormat(
+            $iterator,
+            function ($row, $key, $iterator) use ($header, $headerCount) {
+                if ($headerCount > 0) {
+                    if ($headerCount != count($row)) {
+                        $row = array_slice(
+                            array_pad($row, $headerCount, null),
+                            0,
+                            $headerCount
+                        );
+                    }
+
+                    $row = array_combine($header, $row);
+                }
+
+                return $row;
+            }
+        );
     }
 
     /**
-     * {@inheritdoc}
+     * Apply a filter iterator
+     *
+     * @param Iterator $iterator
+     * @param callable $callback
+     * @return CallbackFilterIterator
      */
-    public function next()
+    private function applyFilter(Iterator $iterator, callable $callback)
     {
-        return $this->file->next();
+        return new CallbackFilterIterator($iterator, $callback);
     }
 
     /**
-     * {@inheritdoc}
+     * Apply a format iterator
+     *
+     * @param Iterator $iterator
+     * @param callable $callback
+     * @return MapIterator
      */
-    public function rewind()
+    private function applyFormat(Iterator $iterator, callable $callback)
     {
-        return $this->file->rewind();
+        return new MapIterator($iterator, $callback);
     }
 
     /**
-     * {@inheritdoc}
+     * Add filter iterators
+     *
+     * @param Iterator $iterator
+     * @return Iterator
      */
-    public function valid()
+    private function getFilterIterator(Iterator $iterator)
     {
-        return $this->file->valid();
+        foreach ($this->filters as $callback) {
+            $iterator = $this->applyFilter($iterator, $callback);
+        }
+        return $iterator;
+    }
+
+    /**
+     * Add format iterators
+     *
+     * @param Iterator $iterator
+     * @return Iterator
+     */
+    private function getFormatIterator(Iterator $iterator)
+    {
+        foreach ($this->formatters as $callback) {
+            $iterator = $this->applyFormat($iterator, $callback);
+        }
+        return $iterator;
     }
 }
