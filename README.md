@@ -18,14 +18,12 @@ composer require phillipsdata/csv
 
 use PhillipsData\Csv\Reader;
 
-$reader = new Reader();
-
 // Set the input for the reader
-$reader->input(new SplFileObject('php://stdin'));
+$reader = Reader::input(new SplFileObject('php://stdin'));
 
 $lines = [];
 // Fetch the result for each line read
-foreach ($reader as $line) {
+foreach ($reader->fetch() as $line) {
     $lines[] = $line;
 }
 
@@ -38,9 +36,7 @@ foreach ($reader as $line) {
 
 use PhillipsData\Csv\Writer;
 
-$writer = new Writer();
-
-$writer->output(new SplFileObject('/path/to/file.csv'));
+$writer = Writer::output(new SplFileObject('/path/to/file.csv'));
 
 $data = [
     ['colA', 'colB'],
@@ -51,7 +47,7 @@ $data = [
 // Write all rows (works great with Iterators)
 $writer->write($data);
 
-// Write a single row at a time
+// Or, write a single row at a time
 foreach ($data as $row) {
     $writer->writeRow($row);
 }
@@ -66,7 +62,7 @@ foreach ($data as $row) {
 use PhillipsData\Csv\Factory;
 
 // returns \PhillipsData\Csv\Writer
-$writer = Factory::writer('path/to/file');
+$writer = Factory::writer('path/to/file', ',', '"', '\\');
 
 // returns \PhillipsData\Csv\Reader
 $reader = Factory::reader('path/to/file', ',', '"', '\\');
@@ -91,7 +87,7 @@ $reader->format(function ($line, $key, $iterator) {
     ];
 });
 
-foreach ($reader as $line) {
+foreach ($reader->fetch() as $line) {
     // $line now contains 'first_name', 'last_name', 'email', and 'date'.
 }
 
@@ -106,13 +102,8 @@ $reader->filter(function ($line, $key, $iterator) {
     return $line['Last Name'] === 'Smith';
 });
 
-foreach ($reader as $line) {
+foreach ($reader->fetch() as $line) {
     // $line only contains records where $line['Last Name'] === 'Smith'
 }
 
 ```
-
-
-## TODO
-
-Define interfaces for formatters and filters for reuse.
