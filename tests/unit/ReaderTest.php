@@ -14,10 +14,12 @@ class ReaderTest extends PHPUnit_Framework_TestCase
      *
      * @return \PhillipsData\Csv\Reader
      */
-    private function getReader($headers = false)
+    private function getReader($headers = false, $missing_headers = false)
     {
+        $file_name = 'reader' . ($missing_headers ? '_headers' : '') . '.csv';
         return Factory::reader(
-            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'reader.csv',
+            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . $file_name,
             ',',
             '"',
             '\\',
@@ -29,8 +31,8 @@ class ReaderTest extends PHPUnit_Framework_TestCase
      * @dataProvider inputProvider
      * @covers ::input
      * @covers ::setHeader
-     * @covers \PhillipsData\Csv\AbstractCsv::__construct
-     * @covers \PhillipsData\Csv\AbstractCsv::__destruct
+     * @covers ::__construct
+     * @covers ::__destruct
      * @uses \PhillipsData\Csv\Factory::reader
      * @uses \PhillipsData\Csv\Factory::fileObject
      */
@@ -61,14 +63,14 @@ class ReaderTest extends PHPUnit_Framework_TestCase
      * @covers ::getFormatIterator
      * @covers ::applyFormat
      * @covers ::input
+     * @covers ::filter
+     * @covers ::format
+     * @covers ::__construct
+     * @covers ::__destruct
+     * @covers ::getIterator
      * @uses \PhillipsData\Csv\Map\MapIterator::__construct
      * @uses \PhillipsData\Csv\Factory::reader
      * @uses \PhillipsData\Csv\Factory::fileObject
-     * @uses \PhillipsData\Csv\AbstractCsv::__construct
-     * @uses \PhillipsData\Csv\AbstractCsv::__destruct
-     * @uses \PhillipsData\Csv\AbstractCsv::getIterator
-     * @uses \PhillipsData\Csv\AbstractCsv::filter
-     * @uses \PhillipsData\Csv\AbstractCsv::format
      */
     public function testFetch()
     {
@@ -78,109 +80,6 @@ class ReaderTest extends PHPUnit_Framework_TestCase
             $reader->fetch()
         );
     }
-
-    /**
-     * @covers ::seek
-     * @covers ::input
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     *
-    public function testSeek()
-    {
-        $this->assertNull($this->getReader()->seek(0));
-    }
-     *
-     */
-
-    /**
-     * @covers ::current
-     * @covers ::input
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     *
-    public function testCurrent()
-    {
-        $this->assertInternalType('array', $this->getReader()->current());
-    }
-     *
-     */
-
-    /**
-     * @covers ::key
-     * @covers ::next
-     * @covers ::rewind
-     * @covers ::input
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     *
-    public function testKey()
-    {
-        $reader = $this->getReader();
-
-        $this->assertEquals(0, $reader->key());
-
-        $reader->next();
-        $this->assertEquals(1, $reader->key());
-
-        $reader->next();
-        $this->assertEquals(2, $reader->key());
-
-        $reader->rewind();
-        $this->assertEquals(0, $reader->key());
-    }
-     *
-     */
-
-    /**
-     * @covers ::next
-     * @covers ::input
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     *
-    public function testNext()
-    {
-        $this->assertNull($this->getReader()->next());
-    }
-     *
-     */
-
-    /**
-     * @covers ::rewind
-     * @covers ::input
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     *
-    public function testRewind()
-    {
-        $this->assertNull($this->getReader()->rewind());
-    }
-     *
-     */
-
-    /**
-     * @covers ::valid
-     * @covers ::seek
-     * @covers ::next
-     * @covers ::input
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     *
-    public function testValid()
-    {
-        $reader = $this->getReader();
-
-        $this->assertTrue($reader->valid());
-
-        // CSV file has at least 1 line
-        $reader->next();
-        $this->assertTrue($reader->valid());
-
-        // CSV file does not have 1000 lines
-        $reader->seek(1000);
-        $this->assertFalse($reader->valid());
-    }
-     *
-     */
 
     /**
      * @dataProvider inputProvider
@@ -193,13 +92,13 @@ class ReaderTest extends PHPUnit_Framework_TestCase
      * @covers ::getFormatIterator
      * @covers ::applyFormat
      * @covers ::setHeader
+     * @covers ::__construct
+     * @covers ::__destruct
+     * @covers ::getIterator
      * @uses \PhillipsData\Csv\Map\MapIterator::__construct
      * @uses \PhillipsData\Csv\Map\MapIterator::current
      * @uses \PhillipsData\Csv\Factory::reader
      * @uses \PhillipsData\Csv\Factory::fileObject
-     * @uses \PhillipsData\Csv\AbstractCsv::__construct
-     * @uses \PhillipsData\Csv\AbstractCsv::__destruct
-     * @uses \PhillipsData\Csv\AbstractCsv::getIterator
      */
     public function testFormat($headers)
     {
@@ -221,7 +120,10 @@ class ReaderTest extends PHPUnit_Framework_TestCase
         });
 
         // Check each cell has been formatted
+        $total = 0;
         foreach ($reader->fetch() as $i => $line) {
+            $total++;
+
             foreach ($line as $j => $cell) {
                 // The values should be different until formatted
                 $this->assertNotEquals(
@@ -236,6 +138,9 @@ class ReaderTest extends PHPUnit_Framework_TestCase
                 );
             }
         }
+
+        // CSV should have formatted every line
+        $this->assertEquals(($headers ? 3 : 4), $total);
     }
 
     /**
@@ -249,13 +154,13 @@ class ReaderTest extends PHPUnit_Framework_TestCase
      * @covers ::getFormatIterator
      * @covers ::applyFormat
      * @covers ::setHeader
+     * @covers ::__construct
+     * @covers ::__destruct
+     * @covers ::getIterator
      * @uses \PhillipsData\Csv\Map\MapIterator::__construct
      * @uses \PhillipsData\Csv\Map\MapIterator::current
      * @uses \PhillipsData\Csv\Factory::reader
      * @uses \PhillipsData\Csv\Factory::fileObject
-     * @uses \PhillipsData\Csv\AbstractCsv::__construct
-     * @uses \PhillipsData\Csv\AbstractCsv::__destruct
-     * @uses \PhillipsData\Csv\AbstractCsv::getIterator
      */
     public function testFilter($headers)
     {
@@ -313,11 +218,92 @@ class ReaderTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * Checks formatting when the CSV has fewer headings than columns
+     *
+     * @covers ::format
+     * @covers ::getAssocIterator
+     * @covers ::input
+     * @covers ::fetch
+     * @covers ::getFilterIterator
+     * @covers ::getFormatIterator
+     * @covers ::applyFormat
+     * @covers ::applyfilter
+     * @covers ::setHeader
+     * @covers ::__construct
+     * @covers ::__destruct
+     * @covers ::getIterator
+     * @uses \PhillipsData\Csv\Map\MapIterator::__construct
+     * @uses \PhillipsData\Csv\Map\MapIterator::current
+     * @uses \PhillipsData\Csv\Factory::reader
+     * @uses \PhillipsData\Csv\Factory::fileObject
+     */
+    public function testFormatHeaders()
+    {
+        $reader = $this->getReader(true, true);
+
+        // Determine defaults for a line
+        $default_lines = [];
+        foreach ($reader as $line) {
+            $default_lines[] = $line;
+        }
+
+        // Format each CSV line
+        $reader->format(function ($line, $key, $iterator) {
+            $values = [];
+            foreach ($line as $cell) {
+                $values[] = $this->format($cell);
+            }
+
+            return $values;
+        });
+
+        // Add another formatter
+        $reader->format(function ($line, $key, $iterator) {
+            $values = [];
+            foreach ($line as $cell) {
+                $values[] = $this->formatHyphens($cell);
+            }
+
+            return $values;
+        });
+
+        // Check each cell has been formatted
+        foreach ($reader->fetch() as $i => $line) {
+            foreach ($line as $j => $cell) {
+                // The values should be different until formatted
+                $this->assertNotEquals(
+                    $default_lines[$i][$j],
+                    $cell
+                );
+
+                $formatted_cell = $this->format($default_lines[$i][$j]);
+                $formatted_cell = $this->formatHyphens($formatted_cell);
+
+                // The values should be identical once formatted
+                $this->assertEquals(
+                    $formatted_cell,
+                    $cell
+                );
+            }
+        }
+    }
+
+    /**
      * @param string $text Text to format
      * @return string The formatted text
      */
     private function format($text)
     {
         return strtoupper($text);
+    }
+
+    /**
+     *
+     * @param string $text Text to format
+     * @return string The formatted text;
+     */
+    private function formatHyphens($text)
+    {
+        return '-' . $text . '-';
     }
 }
