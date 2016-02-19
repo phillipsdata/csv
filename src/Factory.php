@@ -23,8 +23,8 @@ class Factory
         $enclosure = '"',
         $escape = '\\'
     ) {
-        $file = static::fileObject($filename, 'w')
-            ->setCsvControl($delimiter, $enclosure, $escape);
+        $file = static::fileObject($filename, 'w');
+        $file->setCsvControl($delimiter, $enclosure, $escape);
         $writer = Writer::output($file);
 
         return $writer;
@@ -47,8 +47,8 @@ class Factory
         $escape = '\\',
         $withHeader = true
     ) {
-        $file = static::fileObject($filename)
-            ->setCsvControl($delimiter, $enclosure, $escape);
+        $file = static::fileObject($filename);
+        $file->setCsvControl($delimiter, $enclosure, $escape);
         $reader = Reader::input($file, $withHeader);
 
         return $reader;
