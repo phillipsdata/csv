@@ -1,8 +1,9 @@
 <?php
 namespace PhillipsData\Csv\Tests\Unit;
 
-use PhillipsData\Csv\Factory;
+use PhillipsData\Csv\Writer;
 use PHPUnit_Framework_TestCase;
+use SplTempFileObject;
 
 /**
  * @coversDefaultClass \PhillipsData\Csv\Writer
@@ -10,35 +11,31 @@ use PHPUnit_Framework_TestCase;
 class WriterTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * Retrieves an instance of the Writer
+     * Fetches the SplFileObject
      *
-     * @return \PhillipsData\Csv\Writer
+     * @return SplTempFileObject
      */
-    private function getWriter()
+    private function getSplFixtureFile()
     {
-        return Factory::writer(
-            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
-            . DIRECTORY_SEPARATOR . 'writer.csv',
-            ',',
-            '"',
-            '\\'
+        $file = new SplTempFileObject();
+        $file->setFlags(
+            SplTempFileObject::READ_CSV
+            | SplTempFileObject::READ_AHEAD
+            | SplTempFileObject::SKIP_EMPTY
         );
+
+        return $file;
     }
 
     /**
-     * Retrieves an instance of the Reader
-     *
-     * @return \PhillipsData\Csv\Reader
+     * @covers ::output
+     * @covers \PhillipsData\Csv\AbstractCsv
      */
-    private function getReader()
+    public function testOutput()
     {
-        return Factory::reader(
-            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
-            . DIRECTORY_SEPARATOR . 'writer.csv',
-            ',',
-            '"',
-            '\\',
-            false
+        $this->assertInstanceOf(
+            '\PhillipsData\Csv\Writer',
+            Writer::output($this->getSplFixtureFile())
         );
     }
 
@@ -47,230 +44,128 @@ class WriterTest extends PHPUnit_Framework_TestCase
      * @covers ::writeRow
      * @covers ::isWritable
      * @covers ::output
-     * @covers ::__construct
-     * @covers ::__destruct
-     * @uses \PhillipsData\Csv\Factory::writer
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     * @uses \PhillipsData\Csv\Reader::input
-     * @uses \PhillipsData\Csv\Reader::setHeader
-     * @uses \PhillipsData\Csv\Reader::fetch
-     * @uses \PhillipsData\Csv\Reader::getAssocIterator
-     * @uses \PhillipsData\Csv\Reader::applyFilter
-     * @uses \PhillipsData\Csv\Reader::applyFormat
-     * @uses \PhillipsData\Csv\Reader::getFilterIterator
-     * @uses \PhillipsData\Csv\Reader::getFormatIterator
-     * @uses \PhillipsData\Csv\Reader::getIterator
-     * @uses \PhillipsData\Csv\Map\MapIterator::__construct
-     * @uses \PhillipsData\Csv\Map\MapIterator::current
+     * @covers \PhillipsData\Csv\AbstractCsv
      */
     public function testWrite()
     {
-        $writer = $this->getWriter();
-        $reader = $this->getReader();
-        $data = $this->getData();
+        $file = $this->getSplFixtureFile();
+        $writer = Writer::output($file);
+        $this->assertInstanceOf('\PhillipsData\Csv\Writer', $writer);
 
-        // Reset the CSV file, ensure it is empty
-        $this->reset($writer);
-        $total = 0;
-        foreach ($reader->fetch() as $item) {
-            $total++;
-        }
-        $this->assertEquals(0, $total);
+        $data = [
+            ['a1', 'b1'],
+            ['a2', 'b2'],
+            ['a3', 'b3'],
+            ['a4', 'b4']
+        ];
 
-        // Write all rows
         $writer->write($data);
-        foreach ($reader->fetch() as $item) {
-            $total++;
+
+        $actual = [];
+        foreach ($file as $row) {
+            $actual[] = $row;
         }
-        $this->assertGreaterThan(0, $total);
+
+        $this->assertEquals($data, $actual);
     }
 
     /**
      * @covers ::write
      * @covers ::output
-     * @covers ::__construct
-     * @covers ::__destruct
-     * @uses \PhillipsData\Csv\Factory::writer
-     * @uses \PhillipsData\Csv\Factory::fileObject
+     * @covers \PhillipsData\Csv\AbstractCsv
      * @expectedException InvalidArgumentException
      */
     public function testWriteException()
     {
-        $writer = $this->getWriter();
+        $writer = Writer::output($this->getSplFixtureFile());
 
         // Exception, string is an invalid argument
-        $writer->write("some data");
+        $writer->write('some data');
     }
 
     /**
-     * Test writing with formatters and filters
-     *
+     * @dataProvider filtersProvider
+     * @covers ::isWritable
      * @covers ::write
      * @covers ::writeRow
-     * @covers ::isWritable
-     * @covers ::filter
-     * @covers ::format
      * @covers ::output
-     * @covers ::__construct
-     * @covers ::__destruct
-     * @uses \PhillipsData\Csv\Factory::writer
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     * @uses \PhillipsData\Csv\Reader::input
-     * @uses \PhillipsData\Csv\Reader::setHeader
-     * @uses \PhillipsData\Csv\Reader::fetch
-     * @uses \PhillipsData\Csv\Reader::getAssocIterator
-     * @uses \PhillipsData\Csv\Reader::applyFilter
-     * @uses \PhillipsData\Csv\Reader::applyFormat
-     * @uses \PhillipsData\Csv\Reader::getFilterIterator
-     * @uses \PhillipsData\Csv\Reader::getFormatIterator
-     * @uses \PhillipsData\Csv\Reader::getIterator
-     * @uses \PhillipsData\Csv\Map\MapIterator::__construct
-     * @uses \PhillipsData\Csv\Map\MapIterator::current
+     * @covers \PhillipsData\Csv\AbstractCsv
      */
-    public function testWriteFilters()
+    public function testFilters($data, $expected)
     {
-        $writer = $this->getWriter();
-        $reader = $this->getReader();
-        $data = $this->getData();
-
-        // Reset the CSV file, ensure it is empty
-        $this->reset($writer);
-        $total = 0;
-        foreach ($reader->fetch() as $item) {
-            $total++;
-        }
-        $this->assertEquals(0, $total);
-
-        // Add a formatter for each CSV line written
-        $writer->format(function ($line, $key, $iterator) {
-            $values = [];
-            foreach ($line as $cell) {
-                $values[] = $this->format($cell);
-            }
-
-            return $values;
+        $file = $this->getSplFixtureFile();
+        $writer = Writer::output($file);
+        $writer->filter(function ($row) {
+            return in_array(substr($row[0], -1), ['1', '3']);
         });
 
-        // Add a filter for each CSV line written
-        $writer->filter(function ($line, $key, $iterator) {
-            // Only write lines whose first column contains numbers
-            return (preg_match('/[0-9]+/', $line[0]));
-        });
-
-        // Write all rows
         $writer->write($data);
 
-        // The first line should not have been written due to the filter
-        $write_data = $data;
-        unset($write_data[0]);
-        $write_data = array_values($write_data);
-
-        // Ensure only the filtered lines were written, and they were formatted
-        foreach ($reader->fetch() as $i => $line) {
-            $total++;
-
-            foreach ($line as $j => $cell) {
-                // The values should be different since $cell was formatted
-                $this->assertNotEquals(
-                    $write_data[$i][$j],
-                    $cell
-                );
-
-                // The values should be identical once formatted
-                $this->assertEquals(
-                    $this->format($write_data[$i][$j]),
-                    $cell
-                );
-            }
+        $actual = [];
+        foreach ($file as $row) {
+            $actual[] = $row;
         }
 
-        // The CSV data has 3 lines, but only 2 should have been written
-        $this->assertEquals(2, $total);
+        $this->assertEquals($expected, $actual);
     }
 
     /**
-     * @covers ::writeRow
-     * @covers ::isWritable
-     * @covers ::output
-     * @covers ::__construct
-     * @covers ::__destruct
-     * @uses \PhillipsData\Csv\Writer::write
-     * @uses \PhillipsData\Csv\Factory::writer
-     * @uses \PhillipsData\Csv\Factory::reader
-     * @uses \PhillipsData\Csv\Factory::fileObject
-     * @uses \PhillipsData\Csv\Reader::input
-     * @uses \PhillipsData\Csv\Reader::setHeader
-     * @uses \PhillipsData\Csv\Reader::fetch
-     * @uses \PhillipsData\Csv\Reader::getAssocIterator
-     * @uses \PhillipsData\Csv\Reader::applyFilter
-     * @uses \PhillipsData\Csv\Reader::applyFormat
-     * @uses \PhillipsData\Csv\Reader::getFilterIterator
-     * @uses \PhillipsData\Csv\Reader::getFormatIterator
-     * @uses \PhillipsData\Csv\Reader::getIterator
-     * @uses \PhillipsData\Csv\Map\MapIterator::__construct
-     * @uses \PhillipsData\Csv\Map\MapIterator::current
-     */
-    public function testWriteRow()
-    {
-        $writer = $this->getWriter();
-        $reader = $this->getReader();
-        $data = $this->getData();
-
-        // Reset the CSV file, ensure it is empty
-        $this->reset($writer);
-        $total = 0;
-        foreach ($reader->fetch() as $item) {
-            $total++;
-        }
-        $this->assertEquals(0, $total);
-
-        // Write all rows
-        $total = 0;
-        foreach ($data as $row) {
-            $writer->writeRow($row);
-            $total++;
-
-            $temp_total = 0;
-            foreach ($reader->fetch() as $item) {
-                $temp_total++;
-            }
-            $this->assertEquals($total, $temp_total);
-        }
-    }
-
-    /**
-     * Resets the writer CSV to an empty file
+     * Data provider for testFilters
      *
-     * @param \PhillipsData\Csv\Writer $writer
-     * @return \PhillipsData\Csv\Writer
+     * @return array
      */
-    private function reset($writer)
-    {
-        $writer->write([]);
-
-        return $writer;
-    }
-
-    /**
-     * @return array An array of data for a CSV
-     */
-    public function getData()
+    public function filtersProvider()
     {
         return [
-            ['colA', 'colB'],
-            ['A1"', 'B1'],
-            ['A2', 'B,2']
+            [
+                [['a1', 'b1'],['a2', 'b2'],['a3', 'b3'],['a4', 'b4']],
+                [['a1', 'b1'],['a3', 'b3']]
+            ]
         ];
     }
 
     /**
-     * @param string $text Text to format
-     * @return string The formatted text
+     * @dataProvider formatterProvider
+     * @covers ::isWritable
+     * @covers ::write
+     * @covers ::writeRow
+     * @covers ::output
+     * @covers \PhillipsData\Csv\AbstractCsv
      */
-    private function format($text)
+    public function testFormatters($data, $expected)
     {
-        return strtolower($text);
+        $file = $this->getSplFixtureFile();
+        $writer = Writer::output($file);
+
+        $writer->format(function ($row) {
+            foreach ($row as $key => &$value) {
+                $value = strtoupper($value);
+            }
+            return $row;
+        });
+
+        $writer->write($data);
+
+        $actual = [];
+        foreach ($file as $row) {
+            $actual[] = $row;
+        }
+
+        $this->assertEquals($expected, $actual);
+    }
+
+    /**
+     * Data provider for testFormatters
+     *
+     * @return array
+     */
+    public function formatterProvider()
+    {
+        return [
+            [
+                [['a1', 'b1'],['a2', 'b2']],
+                [['A1', 'B1'],['A2', 'B2']]
+            ]
+        ];
     }
 }

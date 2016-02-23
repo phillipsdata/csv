@@ -9,41 +9,41 @@ use PHPUnit_Framework_TestCase;
  */
 class FactoryTest extends PHPUnit_Framework_TestCase
 {
-
     /**
      * @covers ::writer
      * @covers ::fileObject
-     * @uses \PhillipsData\Csv\AbstractCsv::__construct
-     * @uses \PhillipsData\Csv\AbstractCsv::__destruct
-     * @uses \PhillipsData\Csv\Writer::output
+     * @uses \PhillipsData\Csv\AbstractCsv
+     * @uses \PhillipsData\Csv\Writer
      */
     public function testWriter()
     {
         $file = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
-            . DIRECTORY_SEPARATOR . 'writer.csv';
+            . DIRECTORY_SEPARATOR . 'non-existent-file.csv';
 
         $this->assertInstanceOf(
             '\PhillipsData\Csv\Writer',
             Factory::writer($file)
         );
+        $this->assertFileExists($file);
+
+        unlink($file);
     }
 
     /**
      * @covers ::reader
      * @covers ::fileObject
-     * @uses \PhillipsData\Csv\AbstractCsv::__construct
-     * @uses \PhillipsData\Csv\AbstractCsv::__destruct
-     * @uses \PhillipsData\Csv\Reader::input
-     * @uses \PhillipsData\Csv\Reader::setHeader
+     * @uses \PhillipsData\Csv\AbstractCsv
+     * @uses \PhillipsData\Csv\Reader
      */
     public function testReader()
     {
         $file = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
-            . DIRECTORY_SEPARATOR . 'reader.csv';
+            . DIRECTORY_SEPARATOR . 'with-header.csv';
 
         $this->assertInstanceOf(
             '\PhillipsData\Csv\Reader',
             Factory::reader($file)
         );
+        $this->assertFileExists($file);
     }
 }

@@ -1,9 +1,9 @@
 <?php
 namespace PhillipsData\Csv\Tests\Unit\Map;
 
-use SplFileObject;
 use PHPUnit_Framework_TestCase;
 use PhillipsData\Csv\Map\MapIterator;
+use ArrayIterator;
 
 /**
  * @coversDefaultClass \PhillipsData\Csv\Map\MapIterator
@@ -11,40 +11,26 @@ use PhillipsData\Csv\Map\MapIterator;
 class MapIteratorTest extends PHPUnit_Framework_TestCase
 {
     /**
-     * @return SplFileObject
-     */
-    private function getIterator()
-    {
-        $filename = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'Fixtures'
-            . DIRECTORY_SEPARATOR . 'iterator.csv';
-        return new SplFileObject($filename, 'r');
-    }
-
-    /**
      * @covers ::__construct
      * @covers ::current
      */
     public function testCurrent()
     {
-        $iterator = $this->getIterator();
+        $iterator = new ArrayIterator(['a', 'b', 'c']);
 
+        $actual = 0;
         $map_iterator = new MapIterator(
             $iterator,
-            function ($line, $key, $iterator) {
-                return strtoupper($line);
+            function ($line) use (&$actual) {
+                $actual++;
+                return $line;
             }
         );
 
-        $this->assertInstanceOf(
-            '\PhillipsData\Csv\Map\MapIterator',
-            $map_iterator
-        );
-
-        // There are three lines in the file (2 CSV lines + 1 blank line)
-        $total = 0;
+        $expected = 0;
         foreach ($map_iterator as $line) {
-            $total++;
+            $expected++;
         }
-        $this->assertEquals(3, $total);
+        $this->assertEquals($expected, $actual);
     }
 }
