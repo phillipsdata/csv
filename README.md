@@ -1,5 +1,7 @@
 # Csv
 
+[![Build Status](https://travis-ci.org/phillipsdata/csv.svg?branch=master)](https://travis-ci.org/phillipsdata/csv) [![Coverage Status](https://coveralls.io/repos/phillipsdata/csv/badge.svg)](https://coveralls.io/r/phillipsdata/csv)
+
 A CSV reader and writer with no external dependencies, that allows just in time
 formatting and filtering, and operates on files as well as streams.
 
