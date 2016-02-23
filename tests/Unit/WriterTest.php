@@ -1,5 +1,5 @@
 <?php
-namespace PhillipsData\Csv\Tests;
+namespace PhillipsData\Csv\Tests\Unit;
 
 use PhillipsData\Csv\Factory;
 use PHPUnit_Framework_TestCase;
@@ -17,7 +17,7 @@ class WriterTest extends PHPUnit_Framework_TestCase
     private function getWriter()
     {
         return Factory::writer(
-            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'fixtures'
+            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
             . DIRECTORY_SEPARATOR . 'writer.csv',
             ',',
             '"',
@@ -33,7 +33,7 @@ class WriterTest extends PHPUnit_Framework_TestCase
     private function getReader()
     {
         return Factory::reader(
-            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'fixtures'
+            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
             . DIRECTORY_SEPARATOR . 'writer.csv',
             ',',
             '"',

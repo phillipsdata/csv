@@ -1,5 +1,5 @@
 <?php
-namespace PhillipsData\Csv\Tests;
+namespace PhillipsData\Csv\Tests\Unit;
 
 use PhillipsData\Csv\Factory;
 use PHPUnit_Framework_TestCase;
@@ -19,7 +19,7 @@ class FactoryTest extends PHPUnit_Framework_TestCase
      */
     public function testWriter()
     {
-        $file = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'fixtures'
+        $file = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
             . DIRECTORY_SEPARATOR . 'writer.csv';
 
         $this->assertInstanceOf(
@@ -38,7 +38,7 @@ class FactoryTest extends PHPUnit_Framework_TestCase
      */
     public function testReader()
     {
-        $file = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'fixtures'
+        $file = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
             . DIRECTORY_SEPARATOR . 'reader.csv';
 
         $this->assertInstanceOf(

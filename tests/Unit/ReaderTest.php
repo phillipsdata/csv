@@ -1,5 +1,5 @@
 <?php
-namespace PhillipsData\Csv\Tests;
+namespace PhillipsData\Csv\Tests\Unit;
 
 use PhillipsData\Csv\Factory;
 use PHPUnit_Framework_TestCase;
@@ -18,7 +18,7 @@ class ReaderTest extends PHPUnit_Framework_TestCase
     {
         $file_name = 'reader' . ($missing_headers ? '_headers' : '') . '.csv';
         return Factory::reader(
-            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'fixtures'
+            dirname(__FILE__) . DIRECTORY_SEPARATOR . 'Fixtures'
             . DIRECTORY_SEPARATOR . $file_name,
             ',',
             '"',

@@ -1,8 +1,9 @@
 <?php
-namespace PhillipsData\Csv\Tests;
+namespace PhillipsData\Csv\Tests\Unit\Map;
 
 use SplFileObject;
 use PHPUnit_Framework_TestCase;
+use PhillipsData\Csv\Map\MapIterator;
 
 /**
  * @coversDefaultClass \PhillipsData\Csv\Map\MapIterator
@@ -14,7 +15,7 @@ class MapIteratorTest extends PHPUnit_Framework_TestCase
      */
     private function getIterator()
     {
-        $filename = dirname(__FILE__) . DIRECTORY_SEPARATOR . 'fixtures'
+        $filename = dirname(dirname(__FILE__)) . DIRECTORY_SEPARATOR . 'Fixtures'
             . DIRECTORY_SEPARATOR . 'iterator.csv';
         return new SplFileObject($filename, 'r');
     }
@@ -27,7 +28,7 @@ class MapIteratorTest extends PHPUnit_Framework_TestCase
     {
         $iterator = $this->getIterator();
 
-        $map_iterator = new \PhillipsData\Csv\Map\MapIterator(
+        $map_iterator = new MapIterator(
             $iterator,
             function ($line, $key, $iterator) {
                 return strtoupper($line);
