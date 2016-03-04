@@ -15,15 +15,17 @@ class Factory
      * @param string $delimiter
      * @param string $enclosure
      * @param string $escape
+     * @param string $openMode
      * @return \PhillipsData\Csv\Reader
      */
     public static function writer(
         $filename,
         $delimiter = ',',
         $enclosure = '"',
-        $escape = '\\'
+        $escape = '\\',
+        $openMode = 'w'
     ) {
-        $file = static::fileObject($filename, 'w');
+        $file = static::fileObject($filename, $openMode);
         $file->setCsvControl($delimiter, $enclosure, $escape);
         $writer = Writer::output($file);
 
@@ -38,6 +40,7 @@ class Factory
      * @param string $enclosure
      * @param string $escape
      * @param bool $withHeader
+     * @param string $openMode
      * @return \PhillipsData\Csv\Reader
      */
     public static function reader(
@@ -45,9 +48,10 @@ class Factory
         $delimiter = ',',
         $enclosure = '"',
         $escape = '\\',
-        $withHeader = true
+        $withHeader = true,
+        $openMode = 'r'
     ) {
-        $file = static::fileObject($filename);
+        $file = static::fileObject($filename, $openMode);
         $file->setCsvControl($delimiter, $enclosure, $escape);
         $reader = Reader::input($file, $withHeader);
 
